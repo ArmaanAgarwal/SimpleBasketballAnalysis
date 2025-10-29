@@ -1,0 +1,94 @@
+# Initialize Mediapipe Pose model
+mp_pose = mp.solutions.pose
+pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
+mp_drawing = mp.solutions.drawing_utils
+
+# Function to upload video via Colab UI
+def upload_video():
+    uploaded = files.upload()
+    video_path = list(uploaded.keys())[0]
+    print(f"Video uploaded: {video_path}")
+    return video_path
+
+# Function to process video and analyze basketball performance
+def analyze_basketball_performance(video_path):
+    # Open the video file
+    cap = cv2.VideoCapture(video_path)
+
+    # Variables for performance metrics
+    total_shots = 0
+    successful_shots = 0
+    total_dribbles = 0
+    dribble_count = 0
+
+    # Prepare plot for frame-by-frame visualization
+    plt.figure(figsize=(10, 6))
+
+    # Create a tqdm progress bar for smooth feedback
+    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    progress = tqdm(total=frame_count, desc="Processing Frames", unit="frame")
+
+    # Loop through video frames
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        # Convert frame to RGB for MediaPipe processing
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        # Perform pose estimation
+        results = pose.process(frame_rgb)
+
+        # If pose landmarks are found, draw them
+        if results.pose_landmarks:
+            mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+
+        # Show frame with landmarks
+        plt.imshow(frame)
+        plt.axis('off')
+        plt.show()
+
+        # Simple metrics: Example of shooting accuracy tracking based on hand position
+        # Adjust for more complex detection in future versions
+        if results.pose_landmarks:
+            left_wrist = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST]
+            right_wrist = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_WRIST]
+
+            # If both wrists are elevated, it's considered a shot attempt
+            if left_wrist.y < 0.4 and right_wrist.y < 0.4:
+                total_shots += 1
+                # Example of successful shot logic (using a placeholder)
+                # Ideally, track ball trajectory using an object detection model
+                if left_wrist.x > 0.5 and right_wrist.x > 0.5:
+                    successful_shots += 1
+
+        # Simple logic to count dribbles based on hand movement
+        if results.pose_landmarks:
+            left_wrist = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST]
+            if left_wrist.y > 0.5:  # assuming this as a dribble indicator
+                total_dribbles += 1
+                dribble_count += 1
+
+        progress.update(1)  # Update the progress bar
+        time.sleep(0.01)  # Optional: Add a small delay to slow down video processing
+
+    # End video capture
+    cap.release()
+    progress.close()
+
+    # Return metrics
+    print(f"Total Shots: {total_shots}")
+    print(f"Successful Shots: {successful_shots}")
+    print(f"Dribbles Count: {dribble_count}")
+
+    # Display final results in a clear manner
+    print("\n--- Final Performance Metrics ---")
+    print(f"Total Shots: {total_shots}")
+    print(f"Successful Shots: {successful_shots} ({(successful_shots/total_shots)*100 if total_shots > 0 else 0:.2f}%)")
+    print(f"Dribbles Count: {dribble_count}")
+
+# Run the program with UI for video upload and analysis
+print("Please upload your video for analysis (MP4 format preferred).")
+video_path = upload_video()  # Step 1: Upload video
+analyze_basketball_performance(video_path)  # Step 2: Analyze performance
