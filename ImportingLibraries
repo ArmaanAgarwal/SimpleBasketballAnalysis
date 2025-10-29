@@ -1,0 +1,16 @@
+# Install necessary libraries
+!pip install mediapipe
+!pip install tqdm
+!pip install opencv-python-headless  # Use this version to avoid conflicts in Colab
+!pip install --upgrade mediapipe
+
+
+# Import necessary libraries
+import cv2
+import mediapipe as mp
+import numpy as np
+import matplotlib.pyplot as plt
+from google.colab import files
+import io
+import time
+from tqdm import tqdm
